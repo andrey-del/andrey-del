@@ -1,0 +1,70 @@
+esphome:
+  name: esp32
+
+esp32:
+  board: nodemcu-32s
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+wifi:
+  ssid: "************"
+  password: "**************"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32 Fallback Hotspot"
+    password: "E6laxgntkyRn"
+
+captive_portal:
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  id: bus_a
+    
+# Example configuration entry
+output:
+  - platform: ledc
+    id: motor_forward_pin
+    pin: GPIO19
+  - platform: ledc
+    id: motor_reverse_pin
+    pin: GPIO16
+
+fan:
+  - platform: hbridge
+    id: my_fan
+    name: "Жалюзи"
+    pin_a: motor_forward_pin
+    pin_b: motor_reverse_pin
+    # enable_pin: motor_enable
+    decay_mode: slow   # slow decay mode (braking) or fast decay (coasting).
+    speed_count: 15
+
+sensor:
+  - platform: bh1750
+    name: "Освещенность"
+    address: 0x23
+    update_interval: 10s
+    on_value_range:
+        - above: 120.0
+          then:
+            - output.turn_on: motor_forward_pin
+            - delay: 500ms
+            - output.turn_off: motor_forward_pin
+        - below: 15.0
+          then:
+            - output.turn_on: motor_reverse_pin
+            - delay: 500ms
+            - output.turn_off: motor_reverse_pin
