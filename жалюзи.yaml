@@ -17,20 +17,17 @@ ota:
   password: ""
 
 wifi:
-  ssid: "************"
-  password: "**************"
+  ssid: "******"
+  password: "*********"
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Esp32 Fallback Hotspot"
     password: "E6laxgntkyRn"
 
-captive_portal:
-
 i2c:
   sda: 21
   scl: 22
-  scan: true
   id: bus_a
     
 # Example configuration entry
@@ -38,19 +35,10 @@ output:
   - platform: ledc
     id: motor_forward_pin
     pin: GPIO19
+
   - platform: ledc
     id: motor_reverse_pin
     pin: GPIO16
-
-fan:
-  - platform: hbridge
-    id: my_fan
-    name: "Жалюзи"
-    pin_a: motor_forward_pin
-    pin_b: motor_reverse_pin
-    # enable_pin: motor_enable
-    decay_mode: slow   # slow decay mode (braking) or fast decay (coasting).
-    speed_count: 15
 
 sensor:
   - platform: bh1750
@@ -60,11 +48,73 @@ sensor:
     on_value_range:
         - above: 120.0
           then:
-            - output.turn_on: motor_forward_pin
-            - delay: 500ms
-            - output.turn_off: motor_forward_pin
-        - below: 15.0
+            - if:
+                condition:
+                         binary_sensor.is_off: template_bin
+                then:
+                     - output.turn_on: motor_forward_pin
+                     - delay: 500ms
+                     - output.turn_off: motor_forward_pin
+        - below: 15.0 
           then:
-            - output.turn_on: motor_reverse_pin
-            - delay: 500ms
-            - output.turn_off: motor_reverse_pin
+            - if:
+                condition:
+                         binary_sensor.is_on: template_bin
+                then:
+                     - output.turn_on: motor_reverse_pin
+                     - delay: 500ms
+                     - output.turn_off: motor_reverse_pin      
+        
+
+  - platform: uptime
+    name: "Blinds_Uptime_s"
+    id: uptime_sensor
+    update_interval: 15s
+
+button:
+  - platform: template
+    name: "Open"
+    id: open_button
+    on_press:
+      - output.turn_on: motor_forward_pin
+      - delay: 500ms
+      - output.turn_off: motor_forward_pin
+      - binary_sensor.template.publish:
+          id: template_bin
+          state: ON
+  
+  - platform: template
+    name: "Close"
+    id: close_button
+    on_press:
+      - output.turn_on: motor_reverse_pin
+      - delay: 500ms
+      - output.turn_off: motor_reverse_pin
+      - binary_sensor.template.publish:
+          id: template_bin
+          state: OFF
+
+binary_sensor:
+  - platform: template
+    name: "Blinds Open"
+    id: template_bin
+
+text_sensor:
+  - platform: template
+    name: "Blinds_Uptime"
+    lambda: |-
+        int seconds = round(id(uptime_sensor).raw_state);
+        int days = seconds / (24 * 3600);
+        seconds = seconds % (24 * 3600);
+        int hours = seconds / 3600;
+        seconds = seconds % 3600;
+        int minutes = seconds /  60;
+        seconds = seconds % 60;
+        return (
+          (days ? to_string(days) + "d " : "00d ") +
+          (hours ? to_string(hours) + "h " : "00h ") +
+          (minutes ? to_string(minutes) + "m " : "00m ") +
+          (to_string(seconds) + "s")
+        );
+    icon: mdi:clock-start
+    update_interval: 15s
