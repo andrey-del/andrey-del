@@ -1,0 +1,127 @@
+esphome:
+  name: max7219digit
+
+esp8266:
+  board: nodemcuv2
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+wifi:
+  ssid: "********"
+  password: "********"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Kitchen Fallback Hotspot"
+    password: "4qKi1WRGwR7W"
+
+captive_portal:
+
+# Example configuration entry
+
+globals:
+  - id: display_page
+    type: int
+    restore_value: no
+    initial_value: '1'
+ 
+spi:
+ clk_pin: D0                                  # это подключать к входу CLK на max7219
+ mosi_pin: D1                              # это подключать к входу DIN на max7219
+
+display:
+ - platform: max7219digit
+   cs_pin: D2                                # это подключать к входу CS на max7219
+   num_chips: 4                        # количество матриц
+   intensity: 15                           # яркость матрицы от 0 до 15
+   update_interval: 5s
+   scroll_speed: 200ms
+   id: max7219d
+   lambda: |-
+          it.intensity(atoi(id(matrixbri).state.c_str()));
+          if (id(display_page) == 1) {
+            it.strftime(3, 0, id(digit_font), "%H:%M", id(hass_time).now()); 
+            }  else {
+              if (id(display_page) == 2) {
+              it.printf(0, 0, id(digit_font), "%.1f°C", id(temp2).state); 
+              } else {
+                if (id(display_page) == 3) {
+                it.printf(0, 0, id(digit_font_ru), "%s", id(matrix_text).state.c_str());
+                } else {
+                   if (id(display_page) == 4) {
+                   it.printf(0, 0, id(digit_font), "%.1f°C", id(temp1).state);
+                id(display_page) = 0;
+                      }
+                   
+                   } } } ;
+          id(display_page) ++;
+  
+
+
+#  it.intensity(atoi(id(matrixbri).state.c_str()));
+#  it.printf(0, 0, id(digit_font), "%s", id(temp1).state.c_str());.
+# it.printdigitf("%s", id(temp1).state.c_str());.
+#  it.scroll_left();
+#  it.printf(0, 0, id(digit_font), TextAlign::TOP_LEFT, "%s", id(matrix_text).state.c_str());      
+#  it.print(0, 0, id(digit_font), "%.1f°C", id(temp1).state);
+#  it.strftime(0, 0, id(digit_font), "%H:%M", id(hass_time).now());   
+#  it.strftimedigit("%H:%M", id(hass_time).now());
+      
+font:
+  - file: "LCD5x8HRU.ttf"
+    id: digit_font_ru
+    size: 9
+    glyphs: :°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя!"%()+=,-
+  - file: "pixelmix.ttf"
+    id: digit_font
+    size: 8
+#  - file: "Pixel-UniCode.ttf"
+#    id: digit_font_unic
+#    size: 16
+
+    
+time:                                                 #компонент для получения времени
+  - platform: homeassistant
+    id: hass_time
+    
+text_sensor:                                    #компонент текстовых сенсоров
+  - platform: homeassistant
+    name: "Gismeteo Condition"
+    id: matrix_text
+    entity_id: sensor.home_assistant_condition
+    filters:
+    - substitute:
+      - "rainy -> дождь"
+      - "sunny -> ясно"
+      - "partlycloudy -> переменная-облачность"
+      - "clear-night -> ясная ночь"
+      - "fog -> туман"
+      - "cloudy -> облачность"
+      - "unavailable -> недоступно"
+    
+  - platform: homeassistant
+    name: "Brightness 7219"
+    id: matrixbri
+    entity_id: input_number.matrixbri
+   
+
+    
+sensor:                                          #компонент числовых сенсоров
+  - platform: homeassistant
+    name: "Indoor Temp"
+    id: temp1
+    entity_id: sensor.0x00124b00231e98a8_temperature 
+
+  - platform: homeassistant
+    name: "Outdoor Temp"
+    id: temp2
+    entity_id: sensor.a4c138e4eb64_temperature
+
