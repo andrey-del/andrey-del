@@ -1,0 +1,48 @@
+esphome:
+  name: spotlight2
+
+esp8266:
+  board: esp_wroom_02
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  password: ""
+
+wifi:
+  ssid: "*******"
+  password: "*******"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Light Fallback Hotspot"
+    password: "LGqUpP4ZmUcP"
+
+captive_portal:
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO12
+    id: out_cw
+    frequency: 300 Hz
+  - platform: esp8266_pwm
+    pin: GPIO15
+    id: out_b
+    frequency: 300 Hz    
+
+light:
+  - platform: cwww
+    default_transition_length: 1.5s
+    #restore_mode: RESTORE_DEFAULT_ON
+    name: Спот туалет
+    gamma_correct: 1
+    cold_white: out_cw
+    warm_white: out_b
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2000 K
+    constant_brightness: true
