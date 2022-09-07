@@ -1,0 +1,69 @@
+esphome:
+  name: time
+  platform: ESP8266
+  board: nodemcuv2
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+  reboot_timeout: 0s
+
+ota:
+  password: ""
+
+wifi:
+  ssid: "*******"
+  password: "********"
+  reboot_timeout: 0s
+
+i2c:
+  sda: 5
+  scl: 4
+  scan: True 
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x32"
+    reset_pin: 0
+    rotation: 180°
+    address: 0x3C
+    lambda: |-
+      // Print time in HH:MM format
+      it.strftime(0, 28, id(font2), TextAlign::BASELINE_LEFT, "%H:%M", id(sntp_time).now());
+
+      // Print inside temperature (from homeassistant sensor)
+      if (id(inside_temperature).has_state()) {
+        it.printf(127, 0, id(font3), TextAlign::TOP_RIGHT , "%.1f°", id(inside_temperature).state);
+      }
+
+      // Print outside temperature (from homeassistant sensor)
+      if (id(outside_temperature).has_state()) {
+        it.printf(127, 28, id(font3), TextAlign::BASELINE_RIGHT , "%.1f°", id(outside_temperature).state);
+      }
+
+font:
+  - file: 'BebasNeue-Regular.ttf'
+    id: font2
+    size: 36
+
+  - file: 'arial.ttf'
+    id: font3
+    size: 14
+
+sensor:
+  - platform: homeassistant
+    id: inside_temperature
+    entity_id: sensor.ble_temperature_a4c13801015f
+    internal: true
+
+  - platform: homeassistant
+    id: outside_temperature
+    entity_id: sensor.gismeteo_temperature
+    internal: true
+
+time:
+  - platform: sntp
+    id: sntp_time
