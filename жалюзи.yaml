@@ -1,8 +1,12 @@
+substitutions: 
+  name: 'jaluzi'
+  comment: 'Жалюзи'
+
 esphome:
-  name: esp32
+  name: ${name}
 
 esp32:
-  board: nodemcu-32s
+  board: esp32dev
   framework:
     type: arduino
 
@@ -17,59 +21,30 @@ ota:
   password: ""
 
 wifi:
-  ssid: "******"
-  password: "*********"
+  ssid: "********"
+  password: "*******"
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.1.77
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.1
+  use_address: 192.168.1.77
+  power_save_mode: light
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Esp32 Fallback Hotspot"
-    password: "E6laxgntkyRn"
-
-i2c:
-  sda: 21
-  scl: 22
-  id: bus_a
-    
 # Example configuration entry
 output:
   - platform: ledc
     id: motor_forward_pin
-    pin: GPIO19
+    pin: 33
 
   - platform: ledc
     id: motor_reverse_pin
-    pin: GPIO16
-
-sensor:
-  - platform: bh1750
-    name: "Освещенность"
-    address: 0x23
-    update_interval: 10s
-    on_value_range:
-        - above: 120.0
-          then:
-            - if:
-                condition:
-                         binary_sensor.is_off: template_bin
-                then:
-                     - output.turn_on: motor_forward_pin
-                     - delay: 500ms
-                     - output.turn_off: motor_forward_pin
-        - below: 15.0 
-          then:
-            - if:
-                condition:
-                         binary_sensor.is_on: template_bin
-                then:
-                     - output.turn_on: motor_reverse_pin
-                     - delay: 500ms
-                     - output.turn_off: motor_reverse_pin      
-        
-
-  - platform: uptime
-    name: "Blinds_Uptime_s"
-    id: uptime_sensor
-    update_interval: 15s
+    pin: 32
+    
+switch:
+  - platform: restart
+    name: ${name}_Restart
 
 button:
   - platform: template
@@ -94,14 +69,60 @@ button:
           id: template_bin
           state: OFF
 
+  - platform: safe_mode
+    name: Safe Mode Boot
+    entity_category: diagnostic
+
 binary_sensor:
   - platform: template
     name: "Blinds Open"
     id: template_bin
 
+  - platform: status
+    name: ${name}_Status
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: UTC-4
+
+sun:
+  latitude: 57.0486°
+  longitude: 53.9872°
+  on_sunrise:
+    - if:
+        condition:
+          - binary_sensor.is_off: template_bin
+        then:
+          - output.turn_on: motor_forward_pin
+          - delay: 500ms
+          - output.turn_off: motor_forward_pin 
+          - binary_sensor.template.publish:
+              id: template_bin
+              state: ON
+
+  on_sunset:
+    - if:
+        condition:
+          - binary_sensor.is_on: template_bin
+        then:
+          - output.turn_on: motor_reverse_pin
+          - delay: 500ms
+          - output.turn_off: motor_reverse_pin 
+          - binary_sensor.template.publish:
+              id: template_bin
+              state: OFF
+              
 text_sensor:
+  - platform: sun
+    name: Sun Next Sunrise
+    type: sunrise
+  - platform: sun
+    name: Sun Next Sunset
+    type: sunset
+
   - platform: template
-    name: "Blinds_Uptime"
+    name: ${name}_Uptime
     lambda: |-
         int seconds = round(id(uptime_sensor).raw_state);
         int days = seconds / (24 * 3600);
@@ -118,3 +139,25 @@ text_sensor:
         );
     icon: mdi:clock-start
     update_interval: 15s
+
+dashboard_import:
+  package_import_url: github://esphome/bluetooth-proxies/esp32-generic.yaml@main
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+
+bluetooth_proxy:
+  active: true
+
+sensor:
+  - platform: uptime
+    name: ${name}_Uptime_s
+    icon: mdi:clock-outline
+    id: uptime_sensor
+
+  - platform: wifi_signal
+    name: ${name}_WiFi_RSSI
+    update_interval: 60s
