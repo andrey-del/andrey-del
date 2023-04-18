@@ -1,0 +1,74 @@
+esphome:
+  name: magic-home-led-dimmer
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: "*************"
+  password: "*********"
+  manual_ip:
+    static_ip: 192.168.1.58
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.1
+  use_address: 192.168.1.58
+
+# Enable logging
+# logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+light:
+  - platform: monochromatic
+    name: "Dimmer"
+    id: bedroom_bedside_nightlight1
+    output: pwm_1
+    
+output:
+  - platform: esp8266_pwm
+    id: pwm_1
+    pin: GPIO12
+
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO4
+    name: bedroom_nightlight1_light_button
+    id: bedroom_nightlight1_light_button
+    on_click:
+      then:
+      - light.toggle: bedroom_bedside_nightlight1
+
+    on_press:
+      then:
+      - if:
+          condition: 
+            light.is_off: bedroom_bedside_nightlight1
+          then:
+          - delay: 0.5s
+          - while:
+              condition:
+                binary_sensor.is_on: bedroom_nightlight1_light_button
+              then:
+                - light.dim_relative:
+                    id: bedroom_bedside_nightlight1
+                    relative_brightness: 5%
+                    transition_length: 0.1s
+                - delay: 0.1s
+          else:
+          - delay: 0.5s
+          - while:
+              condition:
+                and:
+                  - binary_sensor.is_on: bedroom_nightlight1_light_button
+                  - light.is_on: bedroom_bedside_nightlight1
+              then:
+                - light.dim_relative:
+                    id: bedroom_bedside_nightlight1
+                    relative_brightness: -5%
+                    transition_length: 0.1s
+                - delay: 0.1s
