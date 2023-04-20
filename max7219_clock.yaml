@@ -1,0 +1,112 @@
+esphome:
+  name: max7219digit
+
+esp8266:
+  board: nodemcuv2
+
+# Enable logging
+#logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: "Keenetic-4075"
+  password: "PdJHJSbE"
+
+  manual_ip:
+    static_ip: 192.168.1.17
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+captive_portal:
+
+# Example configuration entry
+globals:
+  - id: display_page
+    type: int
+    restore_value: no
+    initial_value: '1'
+
+i2c:
+  sda: D5
+  scl: D6
+  scan: true
+  id: bus_a
+
+spi:
+ clk_pin: D0                                  # это подключать к входу CLK на max7219
+ mosi_pin: D1                              # это подключать к входу DIN на max7219
+
+display:
+ - platform: max7219digit
+   cs_pin: D2                                # это подключать к входу CS на max7219
+   num_chips: 4                        # количество матриц
+   intensity: 15                           # яркость матрицы от 0 до 15
+   update_interval: 5s                  # "%.1f°C" после f - юниты измерения
+   scroll_speed: 200ms
+   id: max7219d
+   lambda: |-
+          it.intensity(atoi(id(matrixbri).state.c_str()));
+          if (id(display_page) == 1) {
+            it.strftime(3, 0, id(digit_font), "%H:%M", id(hass_time).now()); 
+            }  else {
+              if (id(display_page) == 2) {
+              it.printf(0, 0, id(digit_font), "%.1f°C", id(bme280_temperature).state); 
+              } else {
+                if (id(display_page) == 3) {
+                it.printf(3, 0, id(digit_font), "%.1f%%", id(bme280_humidity).state);
+                } else {
+                   if (id(display_page) == 4) {
+                   it.printf(0, 0, id(digit_font), "%.1fmmhg", id(bme280_pressure).state);
+                   } else {
+                      if (id(display_page) == 5) {
+                      it.printf(3, 0, id(digit_font), "%.1f°C", id(outdoor_temp).state);      
+                id(display_page) = 0;
+                      }
+                   
+                   } } } };
+          id(display_page) ++;
+  
+font:
+  - file: "LCD5x8HRU.ttf"
+    id: digit_font_ru
+    size: 9
+    glyphs: :°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя!"%()+=,-
+  - file: "pixelmix.ttf"
+    id: digit_font
+    size: 8
+    
+time:                                                 #компонент для получения времени
+  - platform: homeassistant
+    id: hass_time
+    
+text_sensor:                                    #компонент текстовых сенсоров 
+  - platform: homeassistant
+    name: "Brightness 7219"
+    id: matrixbri
+    entity_id: input_number.matrixbri
+
+sensor:
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+      id: bme280_temperature
+    pressure:
+      name: "BME280 Pressure"
+      id: bme280_pressure
+      unit_of_measurement: 'mmhg'
+      filters:
+        - multiply: 0.75006375541921
+    humidity:
+      name: "BME280 Relative Humidity"
+      id: bme280_humidity
+    address: 0x76
+    update_interval: 15s
+      
+  - platform: homeassistant
+    name: "Outdoor temp"
+    id: outdoor_temp
+    entity_id: sensor.gismeteo_temperature     
