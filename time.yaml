@@ -4,7 +4,7 @@ esphome:
   board: nodemcuv2
 
 # Enable logging
-logger:
+#logger:
 
 # Enable Home Assistant API
 api:
@@ -15,39 +15,48 @@ ota:
   password: ""
 
 wifi:
-  ssid: "*******"
-  password: "********"
+  ssid: "*********"
+  password: "**********"
   reboot_timeout: 0s
 
 i2c:
   sda: 5
   scl: 4
-  scan: True 
+  scan: false
+  frequency: 200kHz
+  setup_priority: -100  
 
 display:
   - platform: ssd1306_i2c
-    model: "SSD1306 128x32"
-    reset_pin: 0
+    model: "SSD1306 128x64"
     rotation: 180°
+    reset_pin: 0
+    setup_priority: -100
     address: 0x3C
     lambda: |-
+      // Print "Mitt Smarta Hus" in top center.
+      it.printf(64, 0, id(font1), TextAlign::TOP_CENTER, "My Smart House");
+
       // Print time in HH:MM format
-      it.strftime(0, 28, id(font2), TextAlign::BASELINE_LEFT, "%H:%M", id(sntp_time).now());
+      it.strftime(0, 60, id(font2), TextAlign::BASELINE_LEFT, "%H:%M", id(sntp_time).now());
 
       // Print inside temperature (from homeassistant sensor)
       if (id(inside_temperature).has_state()) {
-        it.printf(127, 0, id(font3), TextAlign::TOP_RIGHT , "%.1f°", id(inside_temperature).state);
+        it.printf(127, 23, id(font3), TextAlign::TOP_RIGHT , "%.1f°", id(inside_temperature).state);
       }
 
       // Print outside temperature (from homeassistant sensor)
       if (id(outside_temperature).has_state()) {
-        it.printf(127, 28, id(font3), TextAlign::BASELINE_RIGHT , "%.1f°", id(outside_temperature).state);
+        it.printf(127, 60, id(font3), TextAlign::BASELINE_RIGHT , "%.1f°", id(outside_temperature).state);
       }
-
 font:
+  - file: 'slkscr.ttf'
+    id: font1
+    size: 8
+
   - file: 'BebasNeue-Regular.ttf'
     id: font2
-    size: 36
+    size: 48
 
   - file: 'arial.ttf'
     id: font3
