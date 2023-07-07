@@ -49,6 +49,7 @@ display:
    scroll_speed: 200ms
    id: max7219d
    lambda: |-
+          it.turn_on_off((id(power_on_off).state));
           it.intensity(atoi(id(matrixbri).state.c_str()));
           if (id(display_page) == 1) {
             it.strftime(3, 0, id(digit_font), "%H:%M", id(hass_time).now()); 
@@ -60,7 +61,7 @@ display:
                 it.printf(3, 0, id(digit_font), "%.1f%%", id(bme280_humidity).state);
                 } else {
                    if (id(display_page) == 4) {
-                   it.printf(0, 0, id(digit_font), "%.1fmmhg", id(bme280_pressure).state);
+                   it.printf(0, 0, id(digit_font), "%.1fmmHg", id(bme280_pressure).state);
                    } else {
                       if (id(display_page) == 5) {
                       it.printf(3, 0, id(digit_font), "%.1f°C", id(outdoor_temp).state);      
@@ -97,7 +98,7 @@ sensor:
     pressure:
       name: "BME280 Pressure"
       id: bme280_pressure
-      unit_of_measurement: 'mmhg'
+      unit_of_measurement: 'mmHg'
       filters:
         - multiply: 0.75006375541921
     humidity:
@@ -110,3 +111,24 @@ sensor:
     name: "Outdoor temp"
     id: outdoor_temp
     entity_id: sensor.gismeteo_temperature     
+
+binary_sensor:
+  - platform: template
+    name: "Power State"
+    id: power_on_off
+    internal: true
+
+switch:
+  - platform: template
+    name: "Display Power Switch"
+    icon: mdi:dots-grid
+    optimistic: true
+    restore_state: yes
+    turn_on_action:
+      - binary_sensor.template.publish:
+          id: power_on_off
+          state: ON
+    turn_off_action:
+      - binary_sensor.template.publish:
+          id: power_on_off
+          state: OFF
