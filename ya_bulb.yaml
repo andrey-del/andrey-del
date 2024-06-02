@@ -1,5 +1,5 @@
 esphome:
-  name: cleverio1
+  name: yandex_bulb
   on_boot:
    then:
     - light.turn_on:
@@ -18,8 +18,8 @@ api:
 ota:
 
 wifi:
-  ssid: "Keenetic-4075"
-  password: "PdJHJSbE"
+  ssid: "******"
+  password: "*****"
 
 captive_portal:
 
