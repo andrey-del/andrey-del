@@ -1,0 +1,56 @@
+esphome:
+  name: yandex_bulb
+  on_boot:
+   then:
+    - light.turn_on:
+        id: light_cwww
+        brightness: 40%
+
+bk72xx:
+  board: cblc5
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: "******"
+  password: "******"
+
+captive_portal:
+
+button:
+  - platform: restart
+    name: Restart
+
+debug:
+  update_interval: 30s
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: Reset Reason
+  - platform: libretiny
+    version:
+      name: LibreTiny Version
+
+output:
+  - platform: libretiny_pwm
+    id: output_cold
+    pin: P24
+  - platform: libretiny_pwm
+    id: output_warm
+    pin: P6
+
+light:
+  - platform: cwww
+    id: light_cwww
+    name: light
+    cold_white_color_temperature: 6500 K
+    warm_white_color_temperature: 2700 K
+    cold_white: output_cold
+    warm_white: output_warm
