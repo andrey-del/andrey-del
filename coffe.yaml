@@ -1,0 +1,160 @@
+substitutions: 
+  name: 'coffeemaker'
+
+esphome:
+  name: ${name}
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+    priority: 800
+    then:
+      - switch.turn_off: HEAT
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+  reboot_timeout: 0s
+  
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: "XXXX"
+  password: "XXXX"
+  fast_connect: true
+  manual_ip:
+    static_ip: 192.168.1.10
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.1
+  use_address: 192.168.1.10
+  reboot_timeout: 0s
+
+i2c:
+  sda: GPIO12
+  scl: GPIO13
+  scan: true
+  id: bus_a
+
+binary_sensor:
+  - platform: gpio
+    pin: GPIO14
+    name: "START"
+    filters:
+      - delayed_on: 10ms
+    on_click:
+    - min_length: 50ms
+      max_length: 350ms
+      then:
+      - delay: 500ms
+      - switch.turn_on: HEAT
+      - servo.write:
+          id: my_servo
+          level: -50.0%
+      - delay: 500ms
+      - servo.write:
+          id: my_servo
+          level: -50.0%
+
+    - min_length: 2000ms
+      max_length: 5000ms
+      then:
+      - delay: 500ms
+#      - switch.turn_on: HEAT
+      - servo.write:
+          id: my_servo
+          level: 20.0%
+      - delay: 500ms
+      - servo.write:
+          id: my_servo
+          level: 20.0%
+
+servo:
+  - id: my_servo
+    output: pwm_output
+    auto_detach_time: 0.5s
+    transition_length: 0s
+    restore: true
+    min_level: 3%
+#    idle_level: 0%
+    max_level: 30%
+
+number:
+  - platform: template
+    name: Servo Control
+    min_value: -100
+    initial_value: 0
+    max_value: 100
+    step: 10
+    optimistic: true
+    set_action:
+      then:
+        - servo.write:
+            id: my_servo
+            level: !lambda 'return x / 100.0;'
+
+output:
+  - platform: esp8266_pwm
+    id: pwm_output
+    pin: GPIO16
+    frequency: 50 Hz
+
+switch:
+  - platform: gpio
+    name: "HEAT"
+    pin: GPIO4
+    id: HEAT
+    inverted: true
+    restore_mode: ALWAYS_OFF  
+
+  - platform: restart
+    name: ${name}_Restart
+
+text_sensor:
+  - platform: template
+    name: ${name}_Uptime
+    lambda: |-
+        int seconds = round(id(uptime_sensor).raw_state);
+        int days = seconds / (24 * 3600);
+        seconds = seconds % (24 * 3600);
+        int hours = seconds / 3600;
+        seconds = seconds % 3600;
+        int minutes = seconds /  60;
+        seconds = seconds % 60;
+        return (
+          (days ? to_string(days) + "d " : "00d ") +
+          (hours ? to_string(hours) + "h " : "00h ") +
+          (minutes ? to_string(minutes) + "m " : "00m ") +
+          (to_string(seconds) + "s")
+        );
+    icon: mdi:clock-start
+    update_interval: 15s
+
+sensor:
+  - platform: uptime
+    name: ${name}_Uptime_s
+    icon: mdi:clock-outline
+    id: uptime_sensor
+
+  - platform: wifi_signal
+    name: ${name}_WiFi_RSSI
+    update_interval: 60s
+
+  - platform: bmp280
+    temperature:
+      name: "BMP280 Temperature"
+      oversampling: 16x
+      on_value_range:
+        - above: 70.0
+          below: 85.0
+          then: 
+            - switch.turn_off: HEAT
+#    pressure:
+#      name: "BMP280 Pressure"
+    address: 0x76
+    update_interval: 10s
+
+
