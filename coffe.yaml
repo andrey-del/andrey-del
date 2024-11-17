@@ -22,8 +22,8 @@ ota:
   - platform: esphome
 
 wifi:
-  ssid: "Keenetic-4075"
-  password: "PdJHJSbE"
+  ssid: ""
+  password: ""
   fast_connect: true
   manual_ip:
     static_ip: 192.168.1.10
