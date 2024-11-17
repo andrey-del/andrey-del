@@ -22,8 +22,8 @@ ota:
   - platform: esphome
 
 wifi:
-  ssid: "XXXX"
-  password: "XXXX"
+  ssid: "Keenetic-4075"
+  password: "PdJHJSbE"
   fast_connect: true
   manual_ip:
     static_ip: 192.168.1.10
@@ -82,19 +82,19 @@ servo:
 #    idle_level: 0%
     max_level: 30%
 
-number:
-  - platform: template
-    name: Servo Control
-    min_value: -100
-    initial_value: 0
-    max_value: 100
-    step: 10
-    optimistic: true
-    set_action:
-      then:
-        - servo.write:
-            id: my_servo
-            level: !lambda 'return x / 100.0;'
+#number:
+#  - platform: template
+#    name: Servo Control
+#    min_value: -100
+#    initial_value: 0
+#    max_value: 100
+#    step: 10
+#    optimistic: true
+#    set_action:
+#      then:
+#        - servo.write:
+#            id: my_servo
+#            level: !lambda 'return x / 100.0;'
 
 output:
   - platform: esp8266_pwm
@@ -109,6 +109,7 @@ switch:
     id: HEAT
     inverted: true
     restore_mode: ALWAYS_OFF  
+    internal: true
 
   - platform: restart
     name: ${name}_Restart
@@ -145,11 +146,11 @@ sensor:
 
   - platform: bmp280
     temperature:
-      name: "BMP280 Temperature"
+      name: "${name}_Temperature"
       oversampling: 16x
       on_value_range:
-        - above: 70.0
-          below: 85.0
+        - above: 50.0
+          below: 55.0
           then: 
             - switch.turn_off: HEAT
 #    pressure:
